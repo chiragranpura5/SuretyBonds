@@ -1,333 +1,603 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Surety Bond Management – Extended</title>
-<script src="https://cdn.tailwindcss.com"></script>
-<!-- Simple hash router + helpers -->
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-  const sections = document.querySelectorAll('[data-route]');
-  const navigate = () => {
-    const hash = location.hash.substring(1) || 'dashboard';
-    sections.forEach(sec => sec.classList.toggle('hidden', sec.id !== hash));
-  };
-  window.addEventListener('hashchange', navigate);
-  navigate();
-
-  /* generic table search */
-  document.querySelectorAll('[data-search-input]').forEach(inp => {
-    inp.addEventListener('input', e => {
-      const query = e.target.value.toLowerCase();
-      const tableId = e.target.dataset.targetTable;
-      const rows = document.querySelectorAll(`#${tableId} tbody tr`);
-      rows.forEach(row => {
-        row.classList.toggle('hidden',
-          !row.innerText.toLowerCase().includes(query));
-      });
-    });
-  });
-
-  /* export to CSV */
-  document.querySelectorAll('[data-export]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const tableId = btn.dataset.export;
-      const table = document.getElementById(tableId);
-      let csv = [];
-      table.querySelectorAll('tr').forEach(row => {
-        let cols = Array.from(row.querySelectorAll('th,td'))
-          .map(col => '"' + col.innerText.replace(/"/g,'""') + '"');
-        csv.push(cols.join(','));
-      });
-      const blob = new Blob([csv.join('\n')], {type: 'text/csv'});
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(blob);
-      link.download = tableId + '.csv';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    });
-  });
-});
-</script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SuretyApp - Comprehensive Bond Management</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/components.css">
+    <link rel="stylesheet" href="styles/responsive.css">
 </head>
-<body class="bg-gray-100 text-gray-800">
-<div class="flex min-h-screen">
-  <!-- Sidebar -->
-  <aside class="w-72 bg-white shadow-md p-4 space-y-4">
-    <h1 class="text-2xl font-bold text-blue-600 mb-4">SuretyBond</h1>
-    <nav class="space-y-3 text-sm">
-      <ul class="space-y-1">
-        <li><a href="#dashboard" class="text-blue-600">Dashboard</a></li>
-        <li><a href="#product-setup">Product Setup</a></li>
-        <li><a href="#mga-management">MGA Management</a></li>
-        <li><a href="#bond-management">Bond Management</a></li>
-        <li><a href="#bordereau-upload">Bordereau Upload</a></li>
-        <li><a href="#failed-cases">Bordereau Case Mgmt</a></li>
-        <li><a href="#doc-upload">Document Upload</a></li>
-      </ul>
-    </nav>
-  </aside>
-
-  <!-- Main -->
-  <main class="flex-1 p-6 space-y-10 overflow-y-auto">
-    <!-- Dashboard -->
-    <section id="dashboard" data-route class="space-y-8">
-      <h2 class="text-xl font-bold">Dashboard</h2>
-      <div class="grid grid-cols-4 gap-4">
-        <div class="bg-white p-4 rounded shadow">
-          <p class="text-sm text-gray-600">Active Bonds</p>
-          <h3 class="text-2xl font-bold">1,248</h3>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="page active">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="logo">
+                        <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        </svg>
+                        <h1>SuretyApp</h1>
+                    </div>
+                    <h2>Sign in to your account</h2>
+                    <p>DUO Authentication Required</p>
+                </div>
+                
+                <form id="loginForm" class="login-form">
+                    <div class="form-group">
+                        <label for="email">Email address</label>
+                        <div class="input-group">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                                <polyline points="22,6 12,13 2,6"/>
+                            </svg>
+                            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <div class="input-group">
+                            <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                                <circle cx="12" cy="16" r="1"/>
+                                <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                            </svg>
+                            <input type="password" id="password" name="password" placeholder="Enter your password" required>
+                            <button type="button" class="password-toggle" onclick="togglePassword()">
+                                <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                    <circle cx="12" cy="12" r="3"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="loginError" class="error-message" style="display: none;"></div>
+                    
+                    <button type="submit" class="btn btn-primary btn-full">
+                        <span id="loginButtonText">Sign in with DUO</span>
+                        <div id="loginSpinner" class="spinner" style="display: none;"></div>
+                    </button>
+                </form>
+                
+                <div class="demo-credentials">
+                    <p>Demo credentials:</p>
+                    <p>Admin: admin@suretyapp.com / password</p>
+                    <p>Ops: ops@suretyapp.com / password</p>
+                </div>
+            </div>
         </div>
-        <div class="bg-white p-4 rounded shadow">
-          <p class="text-sm text-gray-600">Pending MGA Approvals</p>
-          <h3 class="text-2xl font-bold">12</h3>
+    </div>
+
+    <!-- Main Application -->
+    <div id="mainApp" class="page">
+        <!-- Sidebar -->
+        <nav id="sidebar" class="sidebar">
+            <div class="sidebar-header">
+                <div class="logo">
+                    <svg class="shield-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    <span>SuretyApp</span>
+                </div>
+            </div>
+            
+            <ul class="nav-menu" id="navMenu">
+                <li><a href="#" onclick="showPage('dashboard')" class="nav-link active" data-page="dashboard">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9,22 9,12 15,12 15,22"/>
+                    </svg>
+                    Dashboard
+                </a></li>
+                <li><a href="#" onclick="showPage('bonds')" class="nav-link" data-page="bonds">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
+                    Bond Management
+                </a></li>
+                <li><a href="#" onclick="showPage('mgas')" class="nav-link" data-page="mgas">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    MGA Management
+                </a></li>
+                <li><a href="#" onclick="showPage('cases')" class="nav-link" data-page="cases">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    Case Management
+                </a></li>
+                <li><a href="#" onclick="showPage('documents')" class="nav-link" data-page="documents">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="7,10 12,15 17,10"/>
+                        <line x1="12" y1="15" x2="12" y2="3"/>
+                    </svg>
+                    Document Upload
+                </a></li>
+                <li><a href="#" onclick="showPage('bordereau')" class="nav-link" data-page="bordereau">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17,8 12,3 7,8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                    Bordereau Upload
+                </a></li>
+                <li><a href="#" onclick="showPage('contacts')" class="nav-link" data-page="contacts">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    Search Contacts
+                </a></li>
+                <li><a href="#" onclick="showPage('history')" class="nav-link" data-page="history">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12,6 12,12 16,14"/>
+                    </svg>
+                    View History
+                </a></li>
+                <li><a href="#" onclick="showPage('users')" class="nav-link" data-page="users">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                    User Management
+                </a></li>
+                <li><a href="#" onclick="showPage('audit')" class="nav-link" data-page="audit">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    Audit Log
+                </a></li>
+                <li><a href="#" onclick="showPage('security')" class="nav-link" data-page="security">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    Security Management
+                </a></li>
+            </ul>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <header class="header">
+                <div class="header-left">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"/>
+                            <line x1="3" y1="12" x2="21" y2="12"/>
+                            <line x1="3" y1="18" x2="21" y2="18"/>
+                        </svg>
+                    </button>
+                    <h1 id="pageTitle">Dashboard</h1>
+                </div>
+                
+                <div class="header-right">
+                    <button class="notification-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </button>
+                    
+                    <div class="user-menu">
+                        <div class="user-info">
+                            <svg class="user-avatar" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                <circle cx="12" cy="7" r="4"/>
+                            </svg>
+                            <div class="user-details">
+                                <span id="userName">Admin User</span>
+                                <span id="userRole">admin</span>
+                            </div>
+                        </div>
+                        <button class="logout-btn" onclick="logout()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                <polyline points="16,17 21,12 16,7"/>
+                                <line x1="21" y1="12" x2="9" y2="12"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Page Content -->
+            <main class="content" id="pageContent">
+                <!-- Dashboard Content -->
+                <div id="dashboardContent" class="page-content active">
+                    <div class="welcome-card">
+                        <h2>Welcome back, <span id="welcomeUserName">Admin</span>!</h2>
+                        <p>Here's what's happening with your surety bonds today.</p>
+                    </div>
+                    
+                    <div class="stats-grid" id="statsGrid">
+                        <!-- Stats cards will be populated by JavaScript -->
+                    </div>
+                    
+                    <div class="dashboard-grid">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Recent Activity</h3>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+                                </svg>
+                            </div>
+                            <div class="card-content">
+                                <div id="recentActivity" class="activity-list">
+                                    <!-- Activity items will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card">
+                            <div class="card-header">
+                                <h3>Quick Actions</h3>
+                            </div>
+                            <div class="card-content">
+                                <div class="quick-actions">
+                                    <button class="quick-action-btn" onclick="showPage('bonds')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                        </svg>
+                                        Manage Bonds
+                                    </button>
+                                    <button class="quick-action-btn" onclick="showPage('cases')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                            <polyline points="14,2 14,8 20,8"/>
+                                        </svg>
+                                        View Cases
+                                    </button>
+                                    <button class="quick-action-btn" onclick="showPage('documents')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                            <polyline points="7,10 12,15 17,10"/>
+                                            <line x1="12" y1="15" x2="12" y2="3"/>
+                                        </svg>
+                                        Upload Documents
+                                    </button>
+                                    <button class="quick-action-btn" onclick="showPage('contacts')">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <circle cx="11" cy="11" r="8"/>
+                                            <path d="M21 21l-4.35-4.35"/>
+                                        </svg>
+                                        Search Contacts
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bond Management Content -->
+                <div id="bondsContent" class="page-content">
+                    <div class="page-header">
+                        <div class="page-header-left">
+                            <h2>Bond Management</h2>
+                            <p>Manage and track surety bonds</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openBondModal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Add Bond
+                        </button>
+                    </div>
+                    
+                    <div class="filters-card">
+                        <div class="filters">
+                            <div class="search-box">
+                                <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="M21 21l-4.35-4.35"/>
+                                </svg>
+                                <input type="text" id="bondSearch" placeholder="Search bonds..." oninput="filterBonds()">
+                            </div>
+                            <select id="bondStatusFilter" onchange="filterBonds()">
+                                <option value="all">All Status</option>
+                                <option value="active">Active</option>
+                                <option value="expired">Expired</option>
+                                <option value="pending">Pending</option>
+                                <option value="cancelled">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="table-card">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Bond Number</th>
+                                        <th>Principal</th>
+                                        <th>Obligee</th>
+                                        <th>Bond Amount</th>
+                                        <th>Premium</th>
+                                        <th>Status</th>
+                                        <th>MGA</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bondsTableBody">
+                                    <!-- Table rows will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Other page contents will be added here -->
+                <div id="mgasContent" class="page-content">
+                    <div class="page-header">
+                        <div class="page-header-left">
+                            <h2>MGA Management</h2>
+                            <p>Manage Managing General Agents</p>
+                        </div>
+                        <button class="btn btn-primary" onclick="openMGAModal()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            Add MGA
+                        </button>
+                    </div>
+                    
+                    <div class="table-card">
+                        <div class="table-container">
+                            <table class="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Code</th>
+                                        <th>Contact Person</th>
+                                        <th>Email</th>
+                                        <th>Phone</th>
+                                        <th>Location</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="mgasTableBody">
+                                    <!-- Table rows will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Placeholder content for other pages -->
+                <div id="casesContent" class="page-content">
+                    <div class="coming-soon">
+                        <h2>Case Management</h2>
+                        <p>Coming Soon</p>
+                    </div>
+                </div>
+
+                <div id="documentsContent" class="page-content">
+                    <div class="coming-soon">
+                        <h2>Document Upload</h2>
+                        <p>Coming Soon</p>
+                    </div>
+                </div>
+
+                <div id="bordereauContent" class="page-content">
+                    <div class="coming-soon">
+                        <h2>Bordereau Upload</h2>
+                        <p>Coming Soon</p>
+                    </div>
+                </div>
+
+                <div id="contactsContent" class="page-content">
+                    <div class="coming-soon">
+                        <h2>Contact Search</h2>
+                        <p>Coming Soon</p>
+                    </div>
+                </div>
+
+                <div id="historyContent" class="page-content">
+                    <div class="coming-soon">
+                        <h2>View History</h2>
+                        <p>Coming Soon</p>
+                    </div>
+                </div>
+
+                <div id="usersContent" class="page-content">
+                    <div class="coming-soon">
+                        <h2>User Management</h2>
+                        <p>Coming Soon</p>
+                    </div>
+                </div>
+
+                <div id="auditContent" class="page-content">
+                    <div class="coming-soon">
+                        <h2>Audit Log</h2>
+                        <p>Coming Soon</p>
+                    </div>
+                </div>
+
+                <div id="securityContent" class="page-content">
+                    <div class="coming-soon">
+                        <h2>Security Management</h2>
+                        <p>Coming Soon</p>
+                    </div>
+                </div>
+            </main>
         </div>
-        <div class="bg-white p-4 rounded shadow">
-          <p class="text-sm text-gray-600">Outstanding Premium</p>
-          <h3 class="text-2xl font-bold">$1.8M</h3>
+    </div>
+
+    <!-- Bond Modal -->
+    <div id="bondModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="bondModalTitle">Add New Bond</h3>
+                <button class="modal-close" onclick="closeBondModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="bondForm" class="modal-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="bondNumber">Bond Number</label>
+                        <input type="text" id="bondNumber" name="bondNumber" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mgaSelect">MGA</label>
+                        <select id="mgaSelect" name="mgaId" required>
+                            <option value="">Select MGA</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="principal">Principal</label>
+                    <input type="text" id="principal" name="principal" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="obligee">Obligee</label>
+                    <input type="text" id="obligee" name="obligee" required>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="bondAmount">Bond Amount</label>
+                        <input type="number" id="bondAmount" name="bondAmount" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="premium">Premium</label>
+                        <input type="number" id="premium" name="premium" required>
+                    </div>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="effectiveDate">Effective Date</label>
+                        <input type="date" id="effectiveDate" name="effectiveDate" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="expirationDate">Expiration Date</label>
+                        <input type="date" id="expirationDate" name="expirationDate" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bondStatus">Status</label>
+                    <select id="bondStatus" name="status">
+                        <option value="active">Active</option>
+                        <option value="expired">Expired</option>
+                        <option value="pending">Pending</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeBondModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span id="bondSubmitText">Create Bond</span>
+                    </button>
+                </div>
+            </form>
         </div>
-        <div class="bg-white p-4 rounded shadow">
-          <p class="text-sm text-gray-600">Failed Bordereaus</p>
-          <h3 class="text-2xl font-bold">5</h3>
+    </div>
+
+    <!-- MGA Modal -->
+    <div id="mgaModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="mgaModalTitle">Add New MGA</h3>
+                <button class="modal-close" onclick="closeMGAModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="mgaForm" class="modal-form">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="mgaName">Name</label>
+                        <input type="text" id="mgaName" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mgaCode">Code</label>
+                        <input type="text" id="mgaCode" name="code" required>
+                    </div>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="contactPerson">Contact Person</label>
+                        <input type="text" id="contactPerson" name="contactPerson" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mgaEmail">Email</label>
+                        <input type="email" id="mgaEmail" name="email" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mgaPhone">Phone</label>
+                    <input type="tel" id="mgaPhone" name="phone" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="mgaAddress">Address</label>
+                    <input type="text" id="mgaAddress" name="address" required>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="mgaCity">City</label>
+                        <input type="text" id="mgaCity" name="city" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mgaState">State</label>
+                        <input type="text" id="mgaState" name="state" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="mgaZipCode">Zip Code</label>
+                        <input type="text" id="mgaZipCode" name="zipCode" required>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeMGAModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span id="mgaSubmitText">Create MGA</span>
+                    </button>
+                </div>
+            </form>
         </div>
-      </div>
-    </section>
+    </div>
 
-    <!-- Product Setup (same as previous) -->
-    <section id="product-setup" data-route class="hidden">
-      <h2 class="text-xl font-bold mb-4">Product Setup</h2>
-      <table class="w-full text-sm bg-white rounded shadow" id="tbl-products">
-        <thead class="text-left text-gray-500 border-b">
-          <tr>
-            <th class="py-2 pl-4">Product Code</th>
-            <th>Description</th>
-            <th>Bond Type</th>
-            <th>Min Limit</th>
-            <th>Max Limit</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y">
-          <tr><td class="py-2 pl-4">PRF-01</td><td>Standard Performance Bond</td><td>Performance</td><td>$50,000</td><td>$2,000,000</td></tr>
-          <tr><td class="py-2 pl-4">BID-02</td><td>Bid Bond - Domestic Projects</td><td>Bid</td><td>$10,000</td><td>$500,000</td></tr>
-          <tr><td class="py-2 pl-4">PAY-03</td><td>Payment Bond - Public Works</td><td>Payment</td><td>$25,000</td><td>$1,200,000</td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- MGA Management -->
-    <section id="mga-management" data-route class="hidden space-y-4">
-      <h2 class="text-xl font-bold">MGA Management</h2>
-      <!-- Search + actions -->
-      <div class="flex flex-wrap gap-3 items-center">
-        <input type="text" placeholder="Search MGA by name or code" data-search-input data-target-table="tbl-mga"
-               class="flex-1 border rounded p-2 text-sm"/>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm" data-search-btn>Search</button>
-        <button class="bg-green-600 text-white px-4 py-2 rounded text-sm">Add MGA</button>
-        <button class="bg-gray-700 text-white px-4 py-2 rounded text-sm" data-export="tbl-mga">Export to Excel</button>
-      </div>
-      <table class="w-full text-sm bg-white rounded shadow" id="tbl-mga">
-        <thead class="text-left text-gray-500 border-b">
-          <tr>
-            <th class="py-2 pl-4">MGA Code</th>
-            <th>Name</th>
-            <th>Status</th>
-            <th>Country</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y">
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 pl-4">MGA-001</td><td>Alpha Underwriting</td><td><span class="text-green-600">Active</span></td><td>USA</td>
-            <td class="space-x-2">
-              <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Edit</button>
-              <button class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">Deactivate</button>
-            </td>
-          </tr>
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 pl-4">MGA-002</td><td>Beta Risk Solutions</td><td><span class="text-red-600">Inactive</span></td><td>Canada</td>
-            <td class="space-x-2">
-              <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Edit</button>
-              <button class="px-2 py-1 bg-green-600 text-white rounded text-xs">Activate</button>
-            </td>
-          </tr>
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 pl-4">MGA-003</td><td>Gamma Specialty</td><td><span class="text-green-600">Active</span></td><td>UK</td>
-            <td class="space-x-2">
-              <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Edit</button>
-              <button class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">Deactivate</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- Bond Management -->
-    <section id="bond-management" data-route class="hidden space-y-4">
-      <h2 class="text-xl font-bold">Bond Management</h2>
-      <div class="flex flex-wrap gap-3 items-center">
-        <input type="text" placeholder="Search Bond Number" data-search-input data-target-table="tbl-bonds"
-               class="flex-1 border rounded p-2 text-sm"/>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Search</button>
-        <button class="bg-gray-700 text-white px-4 py-2 rounded text-sm" data-export="tbl-bonds">Export to Excel</button>
-      </div>
-      <table class="w-full text-sm bg-white rounded shadow" id="tbl-bonds">
-        <thead class="text-left text-gray-500 border-b">
-          <tr>
-            <th class="py-2 pl-4">Bond Number</th>
-            <th>Principal</th>
-            <th>Bond Type</th>
-            <th>Status</th>
-            <th>Premium</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y">
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 pl-4">SB-2023-0589</td><td>Acme Construction</td><td>Performance</td><td><span class="text-green-600">Active</span></td><td>$25,000</td>
-            <td class="space-x-2">
-              <a href="#view-bond" class="px-2 py-1 bg-blue-500 text-white rounded text-xs">View</a>
-              <button class="px-2 py-1 bg-purple-600 text-white rounded text-xs">Update</button>
-            </td>
-          </tr>
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 pl-4">SB-2023-0600</td><td>Delta Engineering</td><td>Payment</td><td><span class="text-yellow-500">Pending</span></td><td>$18,500</td>
-            <td class="space-x-2">
-              <a href="#view-bond" class="px-2 py-1 bg-blue-500 text-white rounded text-xs">View</a>
-              <button class="px-2 py-1 bg-purple-600 text-white rounded text-xs">Update</button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <!-- Search policies by bond number -->
-      <div class="space-y-2">
-        <h3 class="font-semibold">Policies linked to Bond</h3>
-        <input type="text" placeholder="Enter Bond Number to view policies" class="border rounded p-2 text-sm w-full" />
-        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm mt-1">Search Policies</button>
-        <table class="w-full text-sm bg-white rounded shadow">
-          <thead class="text-left text-gray-500 border-b">
-            <tr><th class="py-2 pl-4">Policy Number</th><th>Start Date</th><th>End Date</th><th>Status</th></tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr class="hover:bg-gray-50"><td class="py-2 pl-4">PL-2023-1254</td><td>2024-07-01</td><td>2025-07-01</td><td><span class="text-green-600">Active</span></td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Bordereau Upload -->
-    <section id="bordereau-upload" data-route class="hidden space-y-4">
-      <h2 class="text-xl font-bold">Bordereau Upload</h2>
-      <div class="space-y-2">
-        <input type="file" class="border p-2 rounded w-full text-sm"/>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Upload & Parse</button>
-      </div>
-      <h3 class="font-semibold">Parsed Results</h3>
-      <table class="w-full text-sm bg-white rounded shadow" id="tbl-bordereau">
-        <thead class="text-left text-gray-500 border-b">
-          <tr><th class="py-2 pl-4">Bond Number</th><th>Parsed Fields</th><th>Status</th></tr>
-        </thead>
-        <tbody class="divide-y">
-          <tr class="hover:bg-gray-50"><td class="py-2 pl-4">SB-2023-0590</td><td>22 / 24</td><td><span class="text-red-600">Errors</span></td></tr>
-          <tr class="hover:bg-gray-50"><td class="py-2 pl-4">SB-2023-0591</td><td>24 / 24</td><td><span class="text-green-600">Success</span></td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- Failed Case Management -->
-    <section id="failed-cases" data-route class="hidden space-y-4">
-      <h2 class="text-xl font-bold">Bordereau Case Management</h2>
-      <button class="bg-gray-700 text-white px-4 py-2 rounded text-sm" data-export="tbl-cases">Export Cases</button>
-      <table class="w-full text-sm bg-white rounded shadow" id="tbl-cases">
-        <thead class="text-left text-gray-500 border-b">
-          <tr><th class="py-2 pl-4">Case ID</th><th>Bond #</th><th>Error</th><th>Status</th><th>Assigned To</th><th>Actions</th></tr>
-        </thead>
-        <tbody class="divide-y">
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 pl-4">CASE-1021</td><td>SB-2023-0590</td><td>Missing Premium Field</td><td><span class="text-yellow-500">Open</span></td><td>S. Patel</td>
-            <td><button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Resolve</button></td>
-          </tr>
-          <tr class="hover:bg-gray-50">
-            <td class="py-2 pl-4">CASE-1022</td><td>SB-2023-0590</td><td>Invalid Policy Start Date</td><td><span class="text-yellow-500">Open</span></td><td>A. Kumar</td>
-            <td><button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Resolve</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- Document Upload -->
-    <section id="doc-upload" data-route class="hidden space-y-4">
-      <h2 class="text-xl font-bold">Certificate / Document Upload</h2>
-      <div class="space-y-2">
-        <label class="block text-sm">Bond Number</label>
-        <input type="text" placeholder="Enter Bond Number" class="border rounded p-2 text-sm w-full"/>
-        <label class="block text-sm mt-2">Select File</label>
-        <input type="file" class="border p-2 rounded w-full text-sm"/>
-        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm mt-3">Upload Document</button>
-      </div>
-      <h3 class="font-semibold">Uploaded Certificates</h3>
-      <table class="w-full text-sm bg-white rounded shadow">
-        <thead class="text-left text-gray-500 border-b">
-          <tr><th class="py-2 pl-4">File Name</th><th>Bond #</th><th>Uploaded On</th><th>Actions</th></tr>
-        </thead>
-        <tbody class="divide-y">
-          <tr class="hover:bg-gray-50"><td class="py-2 pl-4">performance_cert_SB-2023-0589.pdf</td><td>SB-2023-0589</td><td>2025-06-10</td>
-            <td><a href="#" class="text-blue-600 underline text-xs">Download</a></td></tr>
-        </tbody>
-      </table>
-    </section>
-
-    <!-- existing View Bond etc could be copied from old but not necessary for new nav -->
-  
-      <!-- PRODUCT CONFIGURATION SECTION -->
-      <section id="product-configuration" data-route class="hidden">
-        <h2 class="text-xl font-bold mb-4">Product Configuration</h2>
-        <p class="text-sm text-gray-600">Define products aligned to standard bond types.</p>
-        <button class="mb-4 px-4 py-2 rounded shadow bg-blue-600 text-white">Add New Product</button>
-        <table class="w-full text-sm bg-white rounded shadow">
-          <thead class="text-left text-gray-500 border-b">
-            <tr>
-              <th class="py-2 pl-4">Product Code</th>
-              <th>Description</th>
-              <th>Bond Type</th>
-              <th>Min Limit</th>
-              <th>Max Limit</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y">
-            <tr class="hover:bg-gray-50">
-              <td class="py-2 pl-4">PRF-01</td>
-              <td>Standard Performance Bond</td>
-              <td>Performance</td>
-              <td>$50,000</td>
-              <td>$2,000,000</td>
-              <td class="text-green-600">Active</td>
-              <td>
-                <button class="px-2 py-1 rounded bg-yellow-400 text-white text-xs">Edit</button>
-                <button class="px-2 py-1 rounded bg-red-500 text-white text-xs">Deactivate</button>
-              </td>
-            </tr>
-            <tr class="hover:bg-gray-50">
-              <td class="py-2 pl-4">BID-02</td>
-              <td>Bid Bond - Domestic Projects</td>
-              <td>Bid</td>
-              <td>$10,000</td>
-              <td>$500,000</td>
-              <td class="text-red-600">Inactive</td>
-              <td>
-                <button class="px-2 py-1 rounded bg-yellow-400 text-white text-xs">Edit</button>
-                <button class="px-2 py-1 rounded bg-green-600 text-white text-xs">Activate</button>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </section>
-
-    </main>
-</div>
+    <script src="js/database.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/bonds.js"></script>
+    <script src="js/mgas.js"></script>
 </body>
 </html>

@@ -1,0 +1,333 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surety Bond Management – Extended</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Simple hash router + helpers -->
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const sections = document.querySelectorAll('[data-route]');
+  const navigate = () => {
+    const hash = location.hash.substring(1) || 'dashboard';
+    sections.forEach(sec => sec.classList.toggle('hidden', sec.id !== hash));
+  };
+  window.addEventListener('hashchange', navigate);
+  navigate();
+
+  /* generic table search */
+  document.querySelectorAll('[data-search-input]').forEach(inp => {
+    inp.addEventListener('input', e => {
+      const query = e.target.value.toLowerCase();
+      const tableId = e.target.dataset.targetTable;
+      const rows = document.querySelectorAll(`#${tableId} tbody tr`);
+      rows.forEach(row => {
+        row.classList.toggle('hidden',
+          !row.innerText.toLowerCase().includes(query));
+      });
+    });
+  });
+
+  /* export to CSV */
+  document.querySelectorAll('[data-export]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tableId = btn.dataset.export;
+      const table = document.getElementById(tableId);
+      let csv = [];
+      table.querySelectorAll('tr').forEach(row => {
+        let cols = Array.from(row.querySelectorAll('th,td'))
+          .map(col => '"' + col.innerText.replace(/"/g,'""') + '"');
+        csv.push(cols.join(','));
+      });
+      const blob = new Blob([csv.join('\n')], {type: 'text/csv'});
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = tableId + '.csv';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    });
+  });
+});
+</script>
+</head>
+<body class="bg-gray-100 text-gray-800">
+<div class="flex min-h-screen">
+  <!-- Sidebar -->
+  <aside class="w-72 bg-white shadow-md p-4 space-y-4">
+    <h1 class="text-2xl font-bold text-blue-600 mb-4">SuretyBond</h1>
+    <nav class="space-y-3 text-sm">
+      <ul class="space-y-1">
+        <li><a href="#dashboard" class="text-blue-600">Dashboard</a></li>
+        <li><a href="#product-setup">Product Setup</a></li>
+        <li><a href="#mga-management">MGA Management</a></li>
+        <li><a href="#bond-management">Bond Management</a></li>
+        <li><a href="#bordereau-upload">Bordereau Upload</a></li>
+        <li><a href="#failed-cases">Bordereau Case Mgmt</a></li>
+        <li><a href="#doc-upload">Document Upload</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 p-6 space-y-10 overflow-y-auto">
+    <!-- Dashboard -->
+    <section id="dashboard" data-route class="space-y-8">
+      <h2 class="text-xl font-bold">Dashboard</h2>
+      <div class="grid grid-cols-4 gap-4">
+        <div class="bg-white p-4 rounded shadow">
+          <p class="text-sm text-gray-600">Active Bonds</p>
+          <h3 class="text-2xl font-bold">1,248</h3>
+        </div>
+        <div class="bg-white p-4 rounded shadow">
+          <p class="text-sm text-gray-600">Pending MGA Approvals</p>
+          <h3 class="text-2xl font-bold">12</h3>
+        </div>
+        <div class="bg-white p-4 rounded shadow">
+          <p class="text-sm text-gray-600">Outstanding Premium</p>
+          <h3 class="text-2xl font-bold">$1.8M</h3>
+        </div>
+        <div class="bg-white p-4 rounded shadow">
+          <p class="text-sm text-gray-600">Failed Bordereaus</p>
+          <h3 class="text-2xl font-bold">5</h3>
+        </div>
+      </div>
+    </section>
+
+    <!-- Product Setup (same as previous) -->
+    <section id="product-setup" data-route class="hidden">
+      <h2 class="text-xl font-bold mb-4">Product Setup</h2>
+      <table class="w-full text-sm bg-white rounded shadow" id="tbl-products">
+        <thead class="text-left text-gray-500 border-b">
+          <tr>
+            <th class="py-2 pl-4">Product Code</th>
+            <th>Description</th>
+            <th>Bond Type</th>
+            <th>Min Limit</th>
+            <th>Max Limit</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr><td class="py-2 pl-4">PRF-01</td><td>Standard Performance Bond</td><td>Performance</td><td>$50,000</td><td>$2,000,000</td></tr>
+          <tr><td class="py-2 pl-4">BID-02</td><td>Bid Bond - Domestic Projects</td><td>Bid</td><td>$10,000</td><td>$500,000</td></tr>
+          <tr><td class="py-2 pl-4">PAY-03</td><td>Payment Bond - Public Works</td><td>Payment</td><td>$25,000</td><td>$1,200,000</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- MGA Management -->
+    <section id="mga-management" data-route class="hidden space-y-4">
+      <h2 class="text-xl font-bold">MGA Management</h2>
+      <!-- Search + actions -->
+      <div class="flex flex-wrap gap-3 items-center">
+        <input type="text" placeholder="Search MGA by name or code" data-search-input data-target-table="tbl-mga"
+               class="flex-1 border rounded p-2 text-sm"/>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm" data-search-btn>Search</button>
+        <button class="bg-green-600 text-white px-4 py-2 rounded text-sm">Add MGA</button>
+        <button class="bg-gray-700 text-white px-4 py-2 rounded text-sm" data-export="tbl-mga">Export to Excel</button>
+      </div>
+      <table class="w-full text-sm bg-white rounded shadow" id="tbl-mga">
+        <thead class="text-left text-gray-500 border-b">
+          <tr>
+            <th class="py-2 pl-4">MGA Code</th>
+            <th>Name</th>
+            <th>Status</th>
+            <th>Country</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 pl-4">MGA-001</td><td>Alpha Underwriting</td><td><span class="text-green-600">Active</span></td><td>USA</td>
+            <td class="space-x-2">
+              <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Edit</button>
+              <button class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">Deactivate</button>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 pl-4">MGA-002</td><td>Beta Risk Solutions</td><td><span class="text-red-600">Inactive</span></td><td>Canada</td>
+            <td class="space-x-2">
+              <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Edit</button>
+              <button class="px-2 py-1 bg-green-600 text-white rounded text-xs">Activate</button>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 pl-4">MGA-003</td><td>Gamma Specialty</td><td><span class="text-green-600">Active</span></td><td>UK</td>
+            <td class="space-x-2">
+              <button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Edit</button>
+              <button class="px-2 py-1 bg-yellow-500 text-white rounded text-xs">Deactivate</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Bond Management -->
+    <section id="bond-management" data-route class="hidden space-y-4">
+      <h2 class="text-xl font-bold">Bond Management</h2>
+      <div class="flex flex-wrap gap-3 items-center">
+        <input type="text" placeholder="Search Bond Number" data-search-input data-target-table="tbl-bonds"
+               class="flex-1 border rounded p-2 text-sm"/>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Search</button>
+        <button class="bg-gray-700 text-white px-4 py-2 rounded text-sm" data-export="tbl-bonds">Export to Excel</button>
+      </div>
+      <table class="w-full text-sm bg-white rounded shadow" id="tbl-bonds">
+        <thead class="text-left text-gray-500 border-b">
+          <tr>
+            <th class="py-2 pl-4">Bond Number</th>
+            <th>Principal</th>
+            <th>Bond Type</th>
+            <th>Status</th>
+            <th>Premium</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 pl-4">SB-2023-0589</td><td>Acme Construction</td><td>Performance</td><td><span class="text-green-600">Active</span></td><td>$25,000</td>
+            <td class="space-x-2">
+              <a href="#view-bond" class="px-2 py-1 bg-blue-500 text-white rounded text-xs">View</a>
+              <button class="px-2 py-1 bg-purple-600 text-white rounded text-xs">Update</button>
+            </td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 pl-4">SB-2023-0600</td><td>Delta Engineering</td><td>Payment</td><td><span class="text-yellow-500">Pending</span></td><td>$18,500</td>
+            <td class="space-x-2">
+              <a href="#view-bond" class="px-2 py-1 bg-blue-500 text-white rounded text-xs">View</a>
+              <button class="px-2 py-1 bg-purple-600 text-white rounded text-xs">Update</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <!-- Search policies by bond number -->
+      <div class="space-y-2">
+        <h3 class="font-semibold">Policies linked to Bond</h3>
+        <input type="text" placeholder="Enter Bond Number to view policies" class="border rounded p-2 text-sm w-full" />
+        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm mt-1">Search Policies</button>
+        <table class="w-full text-sm bg-white rounded shadow">
+          <thead class="text-left text-gray-500 border-b">
+            <tr><th class="py-2 pl-4">Policy Number</th><th>Start Date</th><th>End Date</th><th>Status</th></tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr class="hover:bg-gray-50"><td class="py-2 pl-4">PL-2023-1254</td><td>2024-07-01</td><td>2025-07-01</td><td><span class="text-green-600">Active</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Bordereau Upload -->
+    <section id="bordereau-upload" data-route class="hidden space-y-4">
+      <h2 class="text-xl font-bold">Bordereau Upload</h2>
+      <div class="space-y-2">
+        <input type="file" class="border p-2 rounded w-full text-sm"/>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm">Upload & Parse</button>
+      </div>
+      <h3 class="font-semibold">Parsed Results</h3>
+      <table class="w-full text-sm bg-white rounded shadow" id="tbl-bordereau">
+        <thead class="text-left text-gray-500 border-b">
+          <tr><th class="py-2 pl-4">Bond Number</th><th>Parsed Fields</th><th>Status</th></tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr class="hover:bg-gray-50"><td class="py-2 pl-4">SB-2023-0590</td><td>22 / 24</td><td><span class="text-red-600">Errors</span></td></tr>
+          <tr class="hover:bg-gray-50"><td class="py-2 pl-4">SB-2023-0591</td><td>24 / 24</td><td><span class="text-green-600">Success</span></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Failed Case Management -->
+    <section id="failed-cases" data-route class="hidden space-y-4">
+      <h2 class="text-xl font-bold">Bordereau Case Management</h2>
+      <button class="bg-gray-700 text-white px-4 py-2 rounded text-sm" data-export="tbl-cases">Export Cases</button>
+      <table class="w-full text-sm bg-white rounded shadow" id="tbl-cases">
+        <thead class="text-left text-gray-500 border-b">
+          <tr><th class="py-2 pl-4">Case ID</th><th>Bond #</th><th>Error</th><th>Status</th><th>Assigned To</th><th>Actions</th></tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 pl-4">CASE-1021</td><td>SB-2023-0590</td><td>Missing Premium Field</td><td><span class="text-yellow-500">Open</span></td><td>S. Patel</td>
+            <td><button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Resolve</button></td>
+          </tr>
+          <tr class="hover:bg-gray-50">
+            <td class="py-2 pl-4">CASE-1022</td><td>SB-2023-0590</td><td>Invalid Policy Start Date</td><td><span class="text-yellow-500">Open</span></td><td>A. Kumar</td>
+            <td><button class="px-2 py-1 bg-blue-500 text-white rounded text-xs">Resolve</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- Document Upload -->
+    <section id="doc-upload" data-route class="hidden space-y-4">
+      <h2 class="text-xl font-bold">Certificate / Document Upload</h2>
+      <div class="space-y-2">
+        <label class="block text-sm">Bond Number</label>
+        <input type="text" placeholder="Enter Bond Number" class="border rounded p-2 text-sm w-full"/>
+        <label class="block text-sm mt-2">Select File</label>
+        <input type="file" class="border p-2 rounded w-full text-sm"/>
+        <button class="bg-blue-600 text-white px-4 py-2 rounded text-sm mt-3">Upload Document</button>
+      </div>
+      <h3 class="font-semibold">Uploaded Certificates</h3>
+      <table class="w-full text-sm bg-white rounded shadow">
+        <thead class="text-left text-gray-500 border-b">
+          <tr><th class="py-2 pl-4">File Name</th><th>Bond #</th><th>Uploaded On</th><th>Actions</th></tr>
+        </thead>
+        <tbody class="divide-y">
+          <tr class="hover:bg-gray-50"><td class="py-2 pl-4">performance_cert_SB-2023-0589.pdf</td><td>SB-2023-0589</td><td>2025-06-10</td>
+            <td><a href="#" class="text-blue-600 underline text-xs">Download</a></td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <!-- existing View Bond etc could be copied from old but not necessary for new nav -->
+  
+      <!-- PRODUCT CONFIGURATION SECTION -->
+      <section id="product-configuration" data-route class="hidden">
+        <h2 class="text-xl font-bold mb-4">Product Configuration</h2>
+        <p class="text-sm text-gray-600">Define products aligned to standard bond types.</p>
+        <button class="mb-4 px-4 py-2 rounded shadow bg-blue-600 text-white">Add New Product</button>
+        <table class="w-full text-sm bg-white rounded shadow">
+          <thead class="text-left text-gray-500 border-b">
+            <tr>
+              <th class="py-2 pl-4">Product Code</th>
+              <th>Description</th>
+              <th>Bond Type</th>
+              <th>Min Limit</th>
+              <th>Max Limit</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y">
+            <tr class="hover:bg-gray-50">
+              <td class="py-2 pl-4">PRF-01</td>
+              <td>Standard Performance Bond</td>
+              <td>Performance</td>
+              <td>$50,000</td>
+              <td>$2,000,000</td>
+              <td class="text-green-600">Active</td>
+              <td>
+                <button class="px-2 py-1 rounded bg-yellow-400 text-white text-xs">Edit</button>
+                <button class="px-2 py-1 rounded bg-red-500 text-white text-xs">Deactivate</button>
+              </td>
+            </tr>
+            <tr class="hover:bg-gray-50">
+              <td class="py-2 pl-4">BID-02</td>
+              <td>Bid Bond - Domestic Projects</td>
+              <td>Bid</td>
+              <td>$10,000</td>
+              <td>$500,000</td>
+              <td class="text-red-600">Inactive</td>
+              <td>
+                <button class="px-2 py-1 rounded bg-yellow-400 text-white text-xs">Edit</button>
+                <button class="px-2 py-1 rounded bg-green-600 text-white text-xs">Activate</button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+    </main>
+</div>
+</body>
+</html>
